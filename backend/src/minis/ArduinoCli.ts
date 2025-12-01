@@ -1,0 +1,69 @@
+import { execSync, spawnSync } from "child_process";
+
+export class ArduinoCli {
+
+    // Metoda 1: Używając execSync z try-catch (rzuca wyjątek przy niezerowym kodzie)
+    // w projectDir musi byc plik dirName.ino
+    public static compile(projectDir: string, customConfigPath: string, outputDir: string): number {
+        let cmd = `docker exec arduino-cli-container arduino-cli compile -b arduino:avr:uno ${projectDir} -v --config-file ${customConfigPath} --output-dir ${outputDir}`;
+        
+        console.log("cmd: " + cmd);
+
+        try {
+            const result = execSync(cmd, { encoding: 'utf-8' });
+            return 0; // Sukces
+        } catch (error: any) {
+            // error.status zawiera kod wyjścia
+            return error.status || 1;
+        }
+    }
+
+    /*
+    // Metoda 2: Używając spawnSync (lepsze, bo nie rzuca wyjątku)
+    public static compileWithSpawn(sketchPath: string, customConfigPath: string, outputDir: string): { exitCode: number; stdout: string; stderr: string } {
+        const args = [
+            'exec',
+            'arduino-cli-container',
+            'arduino-cli',
+            'compile',
+            '-b',
+            'arduino:avr:uno',
+            sketchPath,
+            '-v',
+            '--config-file',
+            customConfigPath,
+            '--output-dir',
+            outputDir
+        ];
+
+        const result = spawnSync('docker', args, {
+            encoding: 'utf-8',
+            stdio: 'pipe'
+        });
+
+        return {
+            exitCode: result.status ?? 1,
+            stdout: result.stdout?.toString() || '',
+            stderr: result.stderr?.toString() || ''
+        };
+    }
+
+    // Metoda 3: execSync z opcją nie rzucającą wyjątku
+    public static compileSafe(sketchPath: string, customConfigPath: string, outputDir: string): { exitCode: number; output: string } {
+        let cmd = `docker exec arduino-cli-container arduino-cli compile -b arduino:avr:uno ${sketchPath} -v --config-file ${customConfigPath} --output-dir ${outputDir}`;
+        
+        try {
+            const output = execSync(cmd, { 
+                encoding: 'utf-8',
+                stdio: 'pipe'
+            });
+            return { exitCode: 0, output: output.toString() };
+        } catch (error: any) {
+            return { 
+                exitCode: error.status || 1, 
+                output: error.stdout?.toString() || error.message || ''
+            };
+        }
+    }
+    */
+}
