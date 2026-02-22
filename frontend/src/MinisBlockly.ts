@@ -86,6 +86,10 @@ export class MinisBlockly {
               scaleSpeed: 1.2
             }
           });
+
+          console.log("Boards: " + this.getBlocklyArduinoBoards().join(", "));
+          console.log("Selected board: " + this.getBlocklyArduinoBoard());
+          this.changeBlocklyArduinoBoard("esp8266_wemos_d1");
     }
 
     public setBlockly(blockly: any) {
@@ -123,6 +127,20 @@ export class MinisBlockly {
         }
         return sucess;
     }
+
+    public changeBlocklyArduinoBoard(newBoard : string) {
+      if (this.blockly.Arduino.Boards.selected !== this.blockly.Arduino.Boards[newBoard]) {
+        this.blockly.Arduino.Boards.changeBoard(this.workspace, newBoard);
+      }
+    };
+
+    public getBlocklyArduinoBoard() : string {
+        return this.blockly.Arduino.Boards.selected;
+    };
+
+    public getBlocklyArduinoBoards() : string[] {
+        return Object.keys(this.blockly.Arduino.Boards.profiles);
+    };
 
     private loadBlocksfromXmlDom(blocksXmlDom : any) : boolean {
         try {

@@ -32,6 +32,17 @@
   padding: 10px;
 }
 
+.monaco_editor {
+  flex-shrink: 0;
+  width: 30%;
+  height: 100%;
+  /*
+  overflow-y: auto;
+  border-left: 1px solid #ccc;
+  padding: 10px;
+  */
+}
+
 .loading_model {
   position: absolute;
   z-index: 1000;
@@ -40,6 +51,18 @@
   left: 0;
   width: 100%;
   height: 100%;
+}
+
+
+.flash_root {
+  position: absolute;
+  border: 1px solid black;
+  background-color: #707070;
+  z-index: 10;
+  height: 400px;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
 }
 
 .sketches_list_root {
@@ -79,10 +102,16 @@
   .sketches_list {
     width: 100%;
   }
+  .flash_root {
+    width: 100%;
+  }
 }
 
 @media (min-width: 768px) {
   .sketches_list {
+    width: 768px;
+  }
+  .flash_root {
     width: 768px;
   }
 }

@@ -1,11 +1,21 @@
 import { execSync, spawnSync } from "child_process";
 
-export class ArduinoCli {
+import { Minis } from "./Minis.js";
+import { MinisProject } from "./MinisProject.js";
 
-    // Metoda 1: Używając execSync z try-catch (rzuca wyjątek przy niezerowym kodzie)
-    // w projectDir musi byc plik dirName.ino
-    public static compile(projectDir: string, customConfigPath: string, outputDir: string): number {
-        let cmd = `docker exec arduino-cli-container arduino-cli compile -b arduino:avr:uno ${projectDir} -v --config-file ${customConfigPath} --output-dir ${outputDir}`;
+export interface ArduinoCli {
+    compile(project : MinisProject): number;
+    getComList(): string[];
+    upload(port: string, project : MinisProject): number;
+}
+
+export class ArduinoCliStandalone implements ArduinoCli {
+
+    compile(project : MinisProject): number {
+        const inputSketchPath = project.path.hostInputSketchCppPath
+        const customConfigPath = project.path.hostCustomConfigPath;
+        const outputDir = project.path.hostOutputDir;
+        let cmd = `${Minis.getInstance().getConfig().arduinoCliStandalonePath} compile -b ${project.device.boardInfo.arduino_fqbn} ${inputSketchPath} -v --config-file ${customConfigPath} --output-dir ${outputDir}`;
         
         console.log("cmd: " + cmd);
 
@@ -16,6 +26,64 @@ export class ArduinoCli {
             // error.status zawiera kod wyjścia
             return error.status || 1;
         }
+    }
+
+    getComList(): string[] {
+        let cmd = `${Minis.getInstance().getConfig().arduinoCliStandalonePath} board list`;
+        const resultCmd = execSync(cmd, { encoding: 'utf-8' });
+        let result : string[] = [];
+        for (let line of resultCmd.split('\n')) {
+            let com : string | undefined = line.split(' ')[0];
+            if (com) {
+                result.push(com);
+            }
+        }
+        return result;
+    }
+
+    upload(port: string, project : MinisProject): number {
+        const inputDir = project.path.hostOutputDir;
+        const projectDir = project.path.hostDir;
+        let cmd = `${Minis.getInstance().getConfig().arduinoCliStandalonePath} upload --fqbn ${project.device.boardInfo.arduino_fqbn} -p ${ port} --input-dir ${inputDir} ${projectDir}`;
+        try {
+            const resultCmd = execSync(cmd, { encoding: 'utf-8' });
+            return 0;
+        } catch (error: any) {
+            return error.status || 1;
+        }
+    }
+}
+
+export class ArduinoCliDocker implements ArduinoCli {
+
+    // Metoda 1: Używając execSync z try-catch (rzuca wyjątek przy niezerowym kodzie)
+    // w projectDir musi byc plik dirName.ino
+    public compile(project : MinisProject): number {
+        const inputSketchPath = project.path.containerInputSketchCppPath;
+        const customConfigPath = project.path.containerCustomConfigPath
+        const outputDir = project.path.containerOutputDir;
+        let cmd = `docker exec arduino-cli-container arduino-cli compile -b ${project.device.boardInfo.arduino_fqbn} ${inputSketchPath} -v --config-file ${customConfigPath} --output-dir ${outputDir}`;
+        
+        console.log("cmd: " + cmd);
+
+        try {
+            const result = execSync(cmd, { encoding: 'utf-8' });
+            return 0; // Sukces
+        } catch (error: any) {
+            // error.status zawiera kod wyjścia
+            return error.status || 1;
+        }
+    }
+
+    getComList(): string[] {
+        return [];
+    }
+
+    upload(port: string, project : MinisProject): number {
+        //const inputDir
+        //const projectDir
+        console.log("upload not implemented");
+        return 1;
     }
 
     /*
@@ -67,3 +135,4 @@ export class ArduinoCli {
     }
     */
 }
+

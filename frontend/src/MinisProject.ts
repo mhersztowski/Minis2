@@ -54,6 +54,14 @@ export class MinisProject {
         return false;
     }
 
+    public async upload(port : string) : Promise<boolean> {
+        const response = await fetch(`http://localhost:3000/project/upload/${this.id}/${port}`);
+        if (response.ok) {
+            return true;
+        }
+        return false;
+    }
+
     public async getHexFile() : Promise<Blob | null> {
         const response = await fetch(`http://localhost:3000/project/hexfile/${this.id}`);
         

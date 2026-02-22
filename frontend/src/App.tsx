@@ -8,9 +8,10 @@ declare const Ardublockly: any;
 import { useEffect, useRef } from "react";
 import { useState, forwardRef, useImperativeHandle } from "react";
 
+import * as monaco from "monaco-editor";
+import Editor, { type OnMount/*, loader , useMonaco*/} from "@monaco-editor/react";
 
 function SketchesList({ data, setVisible }: { data: string[]; setVisible: (visible: boolean) => void }) {
-console.log(data);
   return (
     <div className="sketches_list_root">
       <h2 style={{ textAlign: 'center' }}>Sketches</h2>
@@ -27,6 +28,62 @@ console.log(data);
     </div>
   );
 }
+
+function FlashDialog({ setVisible }: { setVisible: (visible: boolean) => void }) {
+  let [isLoading, setIsLoading] = useState(true);
+  let [ports, setPorts] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!isLoading) {
+      return;
+    }
+
+    fetch(`http://localhost:3000/arduino-cli/comList`)
+      .then(response => response.json())
+      .then(data => {
+        console.log("data ", data);
+        setPorts(data);
+      });
+
+    setIsLoading(false);
+  }, [isLoading]);
+
+  if (isLoading) {
+    return (
+      <div className="loading_model">
+        <h1>Loading ...</h1>
+      </div>
+    );
+  }
+
+    return (
+      <div className="flash_root">
+        <h2 style={{ textAlign: 'center' }}>Flash</h2>
+        <label htmlFor="ports">Select port:</label>
+        <select id="ports" name="ports">
+          <option value="">-- select --</option>
+          {ports.map((port) => (
+            <option key={port} value={port}>{port}</option>
+          ))}
+        </select>
+        <button style={{ display: 'block', margin: '0 auto', width: '100px', height: '30px' }} onClick={() => {
+          setVisible(false);
+        }}>Close</button>
+        <button style={{ display: 'block', margin: '0 auto', width: '100px', height: '30px' }} onClick={() => {
+          //setVisible(false);
+          const port = document.getElementById('ports') as HTMLSelectElement;
+          console.log("port ", port.value);
+          Minis.getInstance().getProject().upload(port.value).then((success) => {
+            if (success) {
+              console.log("upload successful");
+            } else {
+              console.log("upload failed");
+            }
+          });
+        }}>Flash</button>
+      </div>
+    );
+  }
 
 
 interface LoadingModelHandle {
@@ -147,8 +204,10 @@ function ProjectPage() {
   const loadingModelRef = useRef<LoadingModelHandle>(null);
   const blocklyEditorRef = useRef<BlocklyEditorHandle>(null);
   const [visibleSketchesList, setVisibleSketchesList] = useState(false);
+  const [visibleFlashDialog, setVisibleFlashDialog] = useState(false);
   const [sketchesData, setSketchesData] = useState<any[]>([]);
   const params = useParams<{ id: string; sketch: string }>();
+  const [_editorRef, setEditorRef] = useState<monaco.editor.IStandaloneCodeEditor | null>(null);
 
   useEffect(() => {
     if (!params.id || !params.sketch) {
@@ -200,8 +259,24 @@ function ProjectPage() {
         setSketchesData(data);
         setVisibleSketchesList(true);
       });
-    
   }
+
+  //const handleMonacoMount: OnMount = (editor : monaco.editor.IStandaloneCodeEditor, monacoInstance : any) => {
+  const handleMonacoMount: OnMount = (_editor, monacoInstance) => {
+    setEditorRef(_editor);
+  
+    monacoInstance.editor.defineTheme("my-theme", {
+        base: "vs-dark",
+        inherit: true,
+        rules: [],
+        colors: {
+            "editor.background": "#1e1e1e"
+        }
+    });
+
+    //App.instance().monacoEditor.onMount(monacoInstance, editor);
+
+  };
 
   return (
     
@@ -209,6 +284,9 @@ function ProjectPage() {
           <LoadingModel ref={loadingModelRef} />
           {visibleSketchesList && (
             <SketchesList data={sketchesData} setVisible={setVisibleSketchesList}/>
+          )}
+          {visibleFlashDialog && (
+            <FlashDialog setVisible={setVisibleFlashDialog}/>
           )}
           <div className="header">
             <h1 style={{ display: 'inline' }}>Minis Project</h1>
@@ -229,14 +307,23 @@ function ProjectPage() {
               });
             }}>Compile</button>
             <button style={{ display: 'inline' }} onClick={() => {
+              setVisibleFlashDialog(true);
+            }}>Flash</button>
+            <button style={{ display: 'inline' }} onClick={() => {
               showSketchesList();
             }}>Sketches</button>
+
           </div>
           <div className="content">
             <BlocklyEditor ref={blocklyEditorRef}/>
+            {/*
             <div ref={codeDiv} className="output">
               tu jest kod<br />
               tu jest kod<br />
+            </div>
+            */}
+            <div className="monaco_editor">
+              <Editor onMount={handleMonacoMount} />
             </div>
           </div>
         </div>

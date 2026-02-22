@@ -342,6 +342,47 @@ app.get("/project/hexfile/:id", (req: Request, res: Response) => {
     }
   });
 
+app.get("/project/upload/:id/:port", (req: Request, res: Response) => {
+  const id = req.params.id;
+  const port = req.params.port;
+  if (!id || !port) {
+    res.status(400).send("Invalid request");
+    return;
+  }
+  const project = Minis.getInstance().getProject(id);
+
+  if (project) {
+    const status = project.upload(port);
+    if (status === 0) {
+      res.status(200).send("Upload successful");
+    } else {
+      res.status(600).send("Upload failed");
+    }
+  } else {
+    res.status(404).send("Project not found");
+  }
+
+});
+
+  /**
+   * @swagger
+   * /arduino-cli/comList:
+   *   get:
+   *     summary: Get COM list
+   *     description: Returns a list of COM ports
+   *     tags: [General]
+   *     responses:
+   *       200:
+   *         description: Success response with COM list
+   *         content:
+   *           application/json:
+   *             example: ["COM1", "COM2", "COM3"]
+   */
+  app.get("/arduino-cli/comList", (req: Request, res: Response) => {
+    const comList = Minis.getInstance().getArduinoCli().getComList();
+    res.status(200).send(comList);
+  });
+
 app.listen(PORT, () => {
   console.log(`Server działa na http://localhost:${PORT}`);
   console.log(`Swagger docs dostępne na http://localhost:${PORT}/api-docs`);
